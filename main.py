@@ -22,8 +22,10 @@ proxyDict = {
 def parse_args(arguments):
     parser = argparse.ArgumentParser(usage='use -h or --help for more information',
                                      description="Script for signing the Declaration of health form in BUT IS")
-    parser.add_argument("-f", "--file", action="store", metavar="path", required=False,
+    parser.add_argument("-c", "--credentials", action="store", metavar="path", required=False,
                         help="path to the file with your vut login credentials")
+    parser.add_argument("-lf", "--log-file", action="store", metavar="path", required=False,
+                        help="file for storing logs")
     parser.add_argument("-ss", "--short-stay", action="store_true", default=False,
                         help="check the option for a stay shorted then 12 hours")
     return parser.parse_args(arguments)
@@ -85,14 +87,19 @@ def sign_form(vut_session, args):
 
 def main():
     args = parse_args(sys.argv[1:])
-    credentials = get_credentials(args.file)
-    try:
-        session = create_session(credentials)
-        sign_form(session, args)
-        session.close()
-    except Exception:
-        tb = traceback.format_exc()
-        logging.error(tb)
+    if args.log_file is not None:
+        logging.basicConfig(
+            format='%(asctime)s %(levelname)s %(message)s',
+            filename=args.log_file,
+            datefmt='%Y-%m-%d %H:%M:%S')
+        credentials = get_credentials(args.credentials)
+        try:
+            session = create_session(credentials)
+            sign_form(session, args)
+            session.close()
+        except Exception:
+            tb = traceback.format_exc()
+            logging.error(tb)
 
 
 if __name__ == "__main__":
