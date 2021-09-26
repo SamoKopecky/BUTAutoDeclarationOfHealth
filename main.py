@@ -64,6 +64,7 @@ def create_session(credentials):
     if "portal_is_logged_in" not in vut_session.cookies.get_dict().keys():
         logging.error("Login failed")
         sys.exit(1)
+    logging.info("Login successful")
     return vut_session
 
 
@@ -72,7 +73,7 @@ def sign_form(vut_session, args):
     response = vut_session.get("https://www.vut.cz/studis/student.phtml?sn=prohlaseni_studenta")
     xs_id = re.findall('name="xs_prohlaseni__o__bezinfekcnosti__2" value="(.*?)"', response.text)
     if len(xs_id) == 0:
-        logging.error("Sign form now found. Form was probably already signed today.")
+        logging.error("Sign form not found. Form was probably already signed today.")
         sys.exit(1)
     data = {
         "formID": "prohlaseni-o-bezinfekcnosti-2",
@@ -90,16 +91,19 @@ def main():
     if args.log_file is not None:
         logging.basicConfig(
             format='%(asctime)s %(levelname)s %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
             filename=args.log_file,
-            datefmt='%Y-%m-%d %H:%M:%S')
-        credentials = get_credentials(args.credentials)
-        try:
-            session = create_session(credentials)
-            sign_form(session, args)
-            session.close()
-        except Exception:
-            tb = traceback.format_exc()
-            logging.error(tb)
+            level=logging.INFO)
+    else:
+        logging.basicConfig(level=logging.INFO)
+    credentials = get_credentials(args.credentials)
+    try:
+        session = create_session(credentials)
+        sign_form(session, args)
+        session.close()
+    except Exception:
+        tb = traceback.format_exc()
+        logging.error(tb)
 
 
 if __name__ == "__main__":
