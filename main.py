@@ -2,21 +2,13 @@
 
 import argparse
 import json
+import logging
 import re
 import sys
 import traceback
-import requests
-import logging
-
 from getpass import getpass
 
-https_proxy = "127.0.0.1:8080"
-http_proxy = "127.0.0.1:8080"
-
-proxyDict = {
-    "http": http_proxy,
-    "https": https_proxy
-}
+import requests
 
 
 def parse_args(arguments):
@@ -58,7 +50,7 @@ def create_session(credentials):
         'LDAPpasswd': f'{credentials[1]}',
     }
     # To get the vut_ack cookie
-    vut_session.post('https://www.vut.cz/login')
+    vut_session.get('https://www.vut.cz/login')
     # Actual login
     vut_session.post('https://www.vut.cz/login/in/', data=form_data)
     if "portal_is_logged_in" not in vut_session.cookies.get_dict().keys():
@@ -82,20 +74,18 @@ def sign_form(vut_session, args):
         "btnPodepsat-2": "1"
     }
     # Actual signing
-    r = vut_session.post("https://www.vut.cz/studis/student.phtml?sn=prohlaseni_studenta", data=data)
-    # TODO: find response alert in r
+    response = vut_session.post("https://www.vut.cz/studis/student.phtml?sn=prohlaseni_studenta", data=data)
+    result_alert = re.findall('class="alert alert-success".*?class="alert-text"><div>(.*?)<\/div>', response)
+    logging.info(f"Signing successful with the alert message: {result_alert[0]}")
 
 
 def main():
     args = parse_args(sys.argv[1:])
-    if args.log_file is not None:
-        logging.basicConfig(
-            format='%(asctime)s %(levelname)s %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S',
-            filename=args.log_file,
-            level=logging.INFO)
-    else:
-        logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        format='%(asctime)s %(levelname)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        filename=args.log_file,
+        level=logging.INFO)
     credentials = get_credentials(args.credentials)
     try:
         session = create_session(credentials)
