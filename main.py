@@ -35,7 +35,11 @@ def get_credentials(file_path):
 
 
 def read_json(path):
-    file = open(path, "r")
+    try:
+        file = open(path, "r")
+    except (FileNotFoundError, PermissionError) as e:
+        logging.error(e)
+        sys.exit(1)
     json_data = json.loads(file.read())
     file.close()
     return json_data
@@ -65,8 +69,8 @@ def sign_form(vut_session, args):
     response = vut_session.get("https://www.vut.cz/studis/student.phtml?sn=prohlaseni_studenta")
     xs_id = re.findall('name="xs_prohlaseni__o__bezinfekcnosti__2" value="(.*?)"', response.text)
     if len(xs_id) == 0:
-        logging.error("Sign form not found. Form was probably already signed today.")
-        sys.exit(1)
+        logging.warning("Sign form not found. Form was probably already signed today.")
+        sys.exit(0)
     data = {
         "formID": "prohlaseni-o-bezinfekcnosti-2",
         "xs_prohlaseni__o__bezinfekcnosti__2": xs_id[0],
