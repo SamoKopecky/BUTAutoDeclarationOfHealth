@@ -20,6 +20,7 @@ def parse_args(arguments):
                         help="file for storing logs")
     parser.add_argument("-ss", "--short-stay", action="store_true", default=False,
                         help="check the option for a stay shorted then 12 hours")
+    parser.add_argument("-d", "--debug", action="store_true", default=False, help="enable debug mode")
     return parser.parse_args(arguments)
 
 
@@ -69,7 +70,16 @@ def sign_form(vut_session, args):
     response = vut_session.get("https://www.vut.cz/studis/student.phtml?sn=prohlaseni_studenta")
     xs_id = re.findall('name="xs_prohlaseni__o__bezinfekcnosti__2" value="(.*?)"', response.text)
     if len(xs_id) == 0:
-        logging.warning("Sign form not found. Form was probably already signed today.")
+        info_alerts = re.findall('class="alert alert-info".*?class="alert-text"><div>(.*?)<\/div>', response.text)
+        time_match = [re.findall('[0-9]{1,2}:[0-9]{2}', alert) for alert in info_alerts]
+        time_match = filter(lambda m: len(m) != 0, time_match)
+        time_match = list(map(lambda m: m[0], time_match))
+        log_msg = "Sign form not found. Form was already signed today"
+        if len(time_match) == 1:
+            log_msg += f" at {time_match[0]}."
+        else:
+            log_msg += "."
+        logging.warning(log_msg)
         sys.exit(0)
     data = {
         "formID": "prohlaseni-o-bezinfekcnosti-2",
@@ -88,8 +98,11 @@ def main():
     logging.basicConfig(
         format='%(asctime)s %(levelname)s %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
-        filename=args.log_file,
-        level=logging.INFO)
+        filename=args.log_file)
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        logging.getLogger().setLevel(logging.INFO)
     credentials = get_credentials(args.credentials)
     try:
         session = create_session(credentials)
