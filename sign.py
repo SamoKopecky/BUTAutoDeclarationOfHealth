@@ -74,11 +74,9 @@ def sign_form(vut_session, args):
         time_match = [re.findall('[0-9]{1,2}:[0-9]{2}', alert) for alert in info_alerts]
         time_match = filter(lambda m: len(m) != 0, time_match)
         time_match = list(map(lambda m: m[0], time_match))
-        log_msg = "Sign form not found. Form was already signed today"
+        log_msg = "Sign form not found, form was already signed today"
         if len(time_match) == 1:
-            log_msg += f" at {time_match[0]}."
-        else:
-            log_msg += "."
+            log_msg += f" at {time_match[0]}"
         logging.warning(log_msg)
         sys.exit(0)
     data = {
